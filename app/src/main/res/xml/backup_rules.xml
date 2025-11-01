@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<full-backup-content>
+    <!-- Incluir la base de datos en el backup -->
+    <include domain="database" path="ani_nderesarai_database" />
+    <include domain="database" path="ani_nderesarai_database-shm" />
+    <include domain="database" path="ani_nderesarai_database-wal" />
+    
+    <!-- Incluir preferencias compartidas -->
+    <include domain="sharedpref" path="." />
+    
+    <!-- Incluir archivos de configuración -->
+    <include domain="file" path="config/" />
+    
+    <!-- Excluir archivos temporales y cache -->
+    <exclude domain="cache" path="." />
+    <exclude domain="no_backup" path="." />
+    <exclude domain="file" path="temp/" />
+    
+    <!-- Excluir archivos sensibles -->
+    <exclude domain="file" path="sensitive/" />
+</full-backup-content>

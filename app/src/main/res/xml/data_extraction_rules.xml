@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<data-extraction-rules>
+    <cloud-backup>
+        <!-- Permitir backup en la nube para datos importantes -->
+        <include domain="database" path="ani_nderesarai_database" />
+        <include domain="sharedpref" path="." />
+        <include domain="file" path="config/" />
+        
+        <!-- Excluir datos sensibles del backup en la nube -->
+        <exclude domain="cache" path="." />
+        <exclude domain="no_backup" path="." />
+        <exclude domain="file" path="temp/" />
+        <exclude domain="file" path="sensitive/" />
+    </cloud-backup>
+    
+    <device-transfer>
+        <!-- Permitir transferencia de dispositivos -->
+        <include domain="database" path="ani_nderesarai_database" />
+        <include domain="sharedpref" path="." />
+        <include domain="file" path="config/" />
+        
+        <!-- Excluir solo cache de la transferencia -->
+        <exclude domain="cache" path="." />
+    </device-transfer>
+</data-extraction-rules>

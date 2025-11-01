@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <!-- Tema para modo nocturno -->
+    <style name="Theme.AniNderesarai" parent="Theme.Material3.DayNight.NoActionBar">
+        <!-- Colores primarios para modo nocturno -->
+        <item name="colorPrimary">#FF80CAFF</item>
+        <item name="colorPrimaryVariant">#FF6BB6FF</item>
+        <item name="colorOnPrimary">#FF003258</item>
+        
+        <!-- Colores secundarios -->
+        <item name="colorSecondary">#FFBCC7DB</item>
+        <item name="colorSecondaryVariant">#FFA6B1C7</item>
+        <item name="colorOnSecondary">#FF253140</item>
+        
+        <!-- Colores de fondo para modo nocturno -->
+        <item name="android:colorBackground">#FF10131A</item>
+        <item name="colorSurface">#FF1E2228</item>
+        <item name="colorOnBackground">#FFE1E2E9</item>
+        <item name="colorOnSurface">#FFE1E2E9</item>
+        
+        <!-- Colores de error -->
+        <item name="colorError">#FFFFB4AB</item>
+        <item name="colorOnError">#FF690005</item>
+        
+        <!-- Status bar para modo nocturno -->
+        <item name="android:statusBarColor">#FF10131A</item>
+        <item name="android:windowLightStatusBar">false</item>
+        
+        <!-- Navigation bar -->
+        <item name="android:navigationBarColor">#FF10131A</item>
+        <item name="android:windowLightNavigationBar">false</item>
+        
+    </style>

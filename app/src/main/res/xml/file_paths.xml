@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<paths xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Archivos externos públicos -->
+    <external-files-path 
+        name="external_files" 
+        path="." />
+    
+    <!-- Cache externo -->
+    <external-cache-path 
+        name="external_cache" 
+        path="." />
+    
+    <!-- Directorio de cache interno -->
+    <cache-path 
+        name="cache" 
+        path="." />
+    
+    <!-- Directorio de archivos internos -->
+    <files-path 
+        name="files" 
+        path="." />
+    
+    <!-- Directorio específico para exportaciones -->
+    <external-files-path 
+        name="exports" 
+        path="exports/" />
+    
+    <!-- Directorio para archivos temporales -->
+    <cache-path 
+        name="temp" 
+        path="temp/" />
+    
+    <!-- Directorio para backups locales -->
+    <external-files-path 
+        name="backups" 
+        path="backups/" />
+        
+</paths>

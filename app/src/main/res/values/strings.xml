@@ -1,0 +1,188 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Nombre de la aplicación -->
+    <string name="app_name">Ani Nderesarai</string>
+    <string name="app_description">Tu asistente personal para recordatorios de pagos</string>
+    <string name="app_version">Versión 1.0</string>
+
+    <!-- Pantallas principales -->
+    <string name="screen_home">Inicio</string>
+    <string name="screen_add_reminder">Agregar Recordatorio</string>
+    <string name="screen_edit_reminder">Editar Recordatorio</string>
+    <string name="screen_settings">Configuración</string>
+    <string name="screen_statistics">Estadísticas</string>
+
+    <!-- Categorías de pago -->
+    <string name="category_utilities">Servicios Públicos</string>
+    <string name="category_water">Agua (ESSAP)</string>
+    <string name="category_electricity">Luz (ANDE)</string>
+    <string name="category_loans">Préstamos</string>
+    <string name="category_credit_cards">Tarjetas de Crédito</string>
+    <string name="category_insurance">Seguros</string>
+    <string name="category_rent">Alquiler</string>
+    <string name="category_subscriptions">Suscripciones</string>
+    <string name="category_taxes">Impuestos</string>
+    <string name="category_education">Educación</string>
+    <string name="category_health">Salud</string>
+    <string name="category_internet">Internet</string>
+    <string name="category_phone">Teléfono</string>
+    <string name="category_other">Otros</string>
+
+    <!-- Campos del formulario -->
+    <string name="field_title">Título del recordatorio</string>
+    <string name="field_description">Descripción (opcional)</string>
+    <string name="field_category">Categoría</string>
+    <string name="field_amount">Monto</string>
+    <string name="field_currency">Moneda</string>
+    <string name="field_due_date">Fecha de vencimiento</string>
+    <string name="field_reminder_time">Hora del recordatorio</string>
+    <string name="field_recurring">Recordatorio recurrente</string>
+    <string name="field_recurring_type">Frecuencia</string>
+    <string name="field_whatsapp_number">Número de WhatsApp</string>
+    <string name="field_custom_message">Mensaje personalizado</string>
+    <string name="field_priority">Prioridad</string>
+    <string name="field_color">Color</string>
+    <string name="field_icon">Icono</string>
+    <string name="field_notes">Notas adicionales</string>
+
+    <!-- Placeholder texts -->
+    <string name="placeholder_whatsapp">Ej: +595981234567</string>
+    <string name="placeholder_amount">Ej: 150000</string>
+    <string name="placeholder_description">Descripción del pago…</string>
+    <string name="placeholder_custom_message">Mensaje que se enviará por WhatsApp…</string>
+    <string name="placeholder_notes">Notas adicionales sobre este recordatorio…</string>
+
+    <!-- Frecuencias de recurrencia -->
+    <string name="recurring_weekly">Semanal</string>
+    <string name="recurring_monthly">Mensual</string>
+    <string name="recurring_quarterly">Trimestral (3 meses)</string>
+    <string name="recurring_semi_annual">Semestral (6 meses)</string>
+    <string name="recurring_annual">Anual</string>
+    <string name="recurring_custom">Personalizado</string>
+
+    <!-- Prioridades -->
+    <string name="priority_low">Baja</string>
+    <string name="priority_medium">Media</string>
+    <string name="priority_high">Alta</string>
+    <string name="priority_urgent">Urgente</string>
+
+    <!-- Acciones -->
+    <string name="action_add">Agregar</string>
+    <string name="action_edit">Editar</string>
+    <string name="action_delete">Eliminar</string>
+    <string name="action_save">Guardar</string>
+    <string name="action_cancel">Cancelar</string>
+    <string name="action_ok">Aceptar</string>
+    <string name="action_yes">Sí</string>
+    <string name="action_no">No</string>
+    <string name="action_mark_as_paid">Marcar como pagado</string>
+    <string name="action_activate">Activar</string>
+    <string name="action_deactivate">Desactivar</string>
+    <string name="action_share">Compartir</string>
+    <string name="action_export">Exportar</string>
+    <string name="action_send_whatsapp">Enviar por WhatsApp</string>
+    <string name="action_view_details">Ver detalles</string>
+    <string name="action_duplicate">Duplicar</string>
+
+    <!-- Estados -->
+    <string name="status_active">Activo</string>
+    <string name="status_inactive">Inactivo</string>
+    <string name="status_paid">Pagado</string>
+    <string name="status_pending">Pendiente</string>
+    <string name="status_overdue">Vencido</string>
+    <string name="status_upcoming">Próximo</string>
+
+    <!-- Notificaciones -->
+    <string name="notification_title">Recordatorio de Pago</string>
+    <string name="notification_channel_name">Recordatorios de Pago</string>
+    <string name="notification_channel_description">Notificaciones para recordatorios de pagos importantes</string>
+    <string name="notification_today">¡Vence hoy!</string>
+    <string name="notification_tomorrow">Vence mañana</string>
+    <string name="notification_days_left">Faltan %d días</string>
+    <string name="notification_overdue">¡Pago vencido!</string>
+
+    <!-- Mensajes del sistema -->
+    <string name="message_saved_successfully">Recordatorio guardado exitosamente</string>
+    <string name="message_deleted_successfully">Recordatorio eliminado</string>
+    <string name="message_marked_as_paid">Marcado como pagado</string>
+    <string name="message_whatsapp_sent">Mensaje enviado por WhatsApp</string>
+    <string name="message_whatsapp_error">Error al enviar mensaje por WhatsApp</string>
+    <string name="message_whatsapp_not_installed">WhatsApp no está instalado</string>
+    <string name="message_permission_denied">Permiso denegado</string>
+    <string name="message_no_internet">Sin conexión a internet</string>
+
+    <!-- Estados vacíos -->
+    <string name="empty_reminders">No hay recordatorios</string>
+    <string name="empty_reminders_description">Agrega tu primer recordatorio de pago para empezar</string>
+    <string name="empty_upcoming">No hay pagos próximos</string>
+    <string name="empty_search">No se encontraron recordatorios</string>
+    <string name="empty_category">No hay recordatorios en esta categoría</string>
+
+    <!-- Filtros -->
+    <string name="filter_all">Todos</string>
+    <string name="filter_active">Activos</string>
+    <string name="filter_paid">Pagados</string>
+    <string name="filter_overdue">Vencidos</string>
+    <string name="filter_upcoming">Próximos</string>
+    <string name="filter_this_week">Esta semana</string>
+    <string name="filter_this_month">Este mes</string>
+
+    <!-- Monedas -->
+    <string name="currency_pyg">Guaraníes (₲)</string>
+    <string name="currency_usd">Dólares ($)</string>
+    <string name="currency_eur">Euros (€)</string>
+    <string name="currency_brl">Reales (R$)</string>
+    <string name="currency_ars">Pesos Argentinos</string>
+
+    <!-- Formato de monedas -->
+    <string name="format_pyg">%,.0f Gs.</string>
+    <string name="format_usd">$%,.2f</string>
+    <string name="format_eur">€%,.2f</string>
+    <string name="format_brl">R$%,.2f</string>
+
+    <!-- Diálogos de confirmación -->
+    <string name="dialog_delete_title">Eliminar Recordatorio</string>
+    <string name="dialog_delete_message">¿Estás seguro de que quieres eliminar este recordatorio?</string>
+    <string name="dialog_mark_paid_title">Marcar como Pagado</string>
+    <string name="dialog_mark_paid_message">¿Confirmas que realizaste este pago?</string>
+    <string name="dialog_deactivate_title">Desactivar Recordatorio</string>
+    <string name="dialog_deactivate_message">Este recordatorio ya no enviará notificaciones</string>
+
+    <!-- Errores -->
+    <string name="error_title_required">El título es obligatorio</string>
+    <string name="error_invalid_amount">Monto inválido</string>
+    <string name="error_invalid_phone">Número de teléfono inválido</string>
+    <string name="error_future_date">La fecha debe ser futura</string>
+    <string name="error_save_failed">Error al guardar el recordatorio</string>
+    <string name="error_load_failed">Error al cargar los datos</string>
+    <string name="error_network">Error de conexión</string>
+    <string name="error_permissions">Se necesitan permisos adicionales</string>
+
+    <!-- WhatsApp mensaje template -->
+    <string name="whatsapp_template">🔔 *Recordatorio de Pago - Ani Nderesarai*\n\n📝 *%1$s*\n📅 Vence: %2$s\n💰 Monto: %3$s\n\n¡No olvides realizar tu pago a tiempo! ⏰</string>
+    <string name="whatsapp_template_no_amount">🔔 *Recordatorio de Pago - Ani Nderesarai*\n\n📝 *%1$s*\n📅 Vence: %2$s\n\n¡No olvides realizar tu pago a tiempo! ⏰</string>
+
+    <!-- Configuraciones -->
+    <string name="settings_notifications">Notificaciones</string>
+    <string name="settings_default_time">Hora predeterminada</string>
+    <string name="settings_default_currency">Moneda predeterminada</string>
+    <string name="settings_backup">Respaldo</string>
+    <string name="settings_export_data">Exportar datos</string>
+    <string name="settings_import_data">Importar datos</string>
+    <string name="settings_about">Acerca de</string>
+    <string name="settings_version">Versión de la aplicación</string>
+
+    <!-- Próximos vencimientos -->
+    <string name="upcoming_reminders">Próximos Vencimientos</string>
+    <string name="upcoming_today">Hoy</string>
+    <string name="upcoming_tomorrow">Mañana</string>
+    <string name="upcoming_this_week">Esta semana</string>
+    <string name="upcoming_next_week">Próxima semana</string>
+
+    <!-- Estadísticas -->
+    <string name="stats_total_reminders">Total de recordatorios</string>
+    <string name="stats_paid_this_month">Pagados este mes</string>
+    <string name="stats_pending_amount">Monto pendiente</string>
+    <string name="stats_most_used_category">Categoría más usada</string>
+
+</resources>
