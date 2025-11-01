@@ -1,5 +1,7 @@
 package com.py.ani_nderesarai.data.database
 
+import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.room.TypeConverter
 import com.py.ani_nderesarai.data.model.*
 import java.time.LocalDate
@@ -15,6 +17,7 @@ class Converters {
         return date?.toString()
     }
     
+    @RequiresApi(Build.VERSION_CODES.O)
     @TypeConverter
     fun toLocalDate(dateString: String?): LocalDate? {
         return dateString?.let { LocalDate.parse(it) }
@@ -25,6 +28,7 @@ class Converters {
         return time?.toString()
     }
     
+    @RequiresApi(Build.VERSION_CODES.O)
     @TypeConverter
     fun toLocalTime(timeString: String?): LocalTime? {
         return timeString?.let { LocalTime.parse(it) }
