@@ -1,14 +1,10 @@
-// ===== app/build.gradle.kts =====
 plugins {
     alias(libs.plugins.android.application)
-    alias(libs.plugins.kotlin.android)         // Kotlin plugin antes que Compose
+    alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
-    kotlin("kapt")                             // KAPT debe estar antes de Hilt
+    id("kotlin-kapt")
     alias(libs.plugins.hilt)
-}
-
-hilt {
-    enableAggregatingTask = false
+    id("org.jetbrains.kotlin.plugin.serialization") version "2.0.21"
 }
 
 android {
@@ -68,7 +64,7 @@ dependencies {
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)
     implementation(libs.core.ktx)
-    implementation(libs.kotlinx.serialization.json)
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0")
 
     // Compose
     implementation(platform(libs.androidx.compose.bom))
@@ -81,10 +77,10 @@ dependencies {
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
 
-    // Room
+    // Room - IMPORTANTE: usar kapt
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)
-    kapt(libs.androidx.room.compiler) // Importante: KAPT
+    kapt(libs.androidx.room.compiler)
 
     // Navigation
     implementation(libs.androidx.navigation.compose)
@@ -92,11 +88,12 @@ dependencies {
     // WorkManager
     implementation(libs.androidx.work.runtime.ktx)
 
-    // Hilt
+    // Hilt - IMPORTANTE: usar kapt y versiones correctas
     implementation(libs.hilt.android)
     kapt(libs.hilt.compiler)
     implementation(libs.androidx.hilt.navigation.compose)
     implementation(libs.androidx.hilt.work)
+    kapt("androidx.hilt:hilt-compiler:1.1.0")
 
     // Permisos
     implementation(libs.accompanist.permissions)
@@ -104,19 +101,19 @@ dependencies {
     // Material
     implementation(libs.material)
 
-    // Forzar JavaPoet estable
-    implementation("com.squareup:javapoet:1.13.0")
+    // Testing
+    testImplementation(libs.junit)
+    androidTestImplementation(libs.androidx.junit)
+    androidTestImplementation(libs.androidx.espresso.core)
 }
 
-// Evitar conflictos de dependencias (JavaPoet)
-configurations.all {
-    resolutionStrategy {
-        force("com.squareup:javapoet:1.13.0")
-    }
-}
-
-// Desactivar KAPT incremental temporalmente si sigue dando problemas
+// Configuración de KAPT
 kapt {
     correctErrorTypes = true
     useBuildCache = true
+}
+
+// Configuración de Hilt
+hilt {
+    enableAggregatingTask = false
 }
