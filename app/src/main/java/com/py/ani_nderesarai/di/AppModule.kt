@@ -2,6 +2,7 @@ package com.py.ani_nderesarai.di
 
 import android.content.Context
 import com.py.ani_nderesarai.utils.NotificationManager
+import com.py.ani_nderesarai.utils.WhatsAppBotManager
 import com.py.ani_nderesarai.utils.WhatsAppManager
 import dagger.Module
 import dagger.Provides
@@ -13,16 +14,22 @@ import javax.inject.Singleton
 @Module
 @InstallIn(SingletonComponent::class)
 object AppModule {
-    
+
     @Provides
     @Singleton
     fun provideWhatsAppManager(): WhatsAppManager {
         return WhatsAppManager()
     }
-    
+
     @Provides
     @Singleton
     fun provideNotificationManager(@ApplicationContext context: Context): NotificationManager {
         return NotificationManager(context)
+    }
+
+    @Provides
+    @Singleton
+    fun provideWhatsAppBotManager(@ApplicationContext context: Context): WhatsAppBotManager {
+        return WhatsAppBotManager(context)
     }
 }
