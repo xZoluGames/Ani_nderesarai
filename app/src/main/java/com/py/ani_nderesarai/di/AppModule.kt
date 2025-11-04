@@ -2,7 +2,6 @@ package com.py.ani_nderesarai.di
 
 import android.content.Context
 import com.py.ani_nderesarai.utils.NotificationManager
-import com.py.ani_nderesarai.utils.WhatsAppBotManager
 import com.py.ani_nderesarai.utils.WhatsAppManager
 import dagger.Module
 import dagger.Provides
@@ -27,9 +26,7 @@ object AppModule {
         return NotificationManager(context)
     }
 
-    @Provides
-    @Singleton
-    fun provideWhatsAppBotManager(@ApplicationContext context: Context): WhatsAppBotManager {
-        return WhatsAppBotManager(context)
-    }
+    // ✅ WhatsAppBotManager REMOVIDO
+    // El bot ahora funciona a través de la API REST en la VPS
+    // No se necesita un manager local
 }

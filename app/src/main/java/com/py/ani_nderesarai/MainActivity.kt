@@ -12,7 +12,6 @@ import com.py.ani_nderesarai.ui.screens.AddEditReminderScreen
 import com.py.ani_nderesarai.ui.screens.BotConfigScreen
 import com.py.ani_nderesarai.ui.screens.HomeScreen
 import com.py.ani_nderesarai.ui.theme.AniNderesaraiTheme
-import com.py.ani_nderesarai.utils.WhatsAppBotManager
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
@@ -21,27 +20,10 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
-        // Verificar si el bot estaba activado y reprogramarlo
-        checkAndRestartBot()
-
         setContent {
             AniNderesaraiTheme {
                 AniNderesaraiApp()
             }
-        }
-    }
-
-    private fun checkAndRestartBot() {
-        val botManager = WhatsAppBotManager(this)
-        if (botManager.isBotEnabled()) {
-            val status = botManager.getBotStatus()
-            // Reprogramar el bot si estaba activado
-            botManager.scheduleBot(
-                phoneNumber = status.phoneNumber,
-                hour = status.sendTime.first,
-                minute = status.sendTime.second,
-                daysAhead = status.daysAhead
-            )
         }
     }
 }

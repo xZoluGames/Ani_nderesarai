@@ -3,28 +3,25 @@ package com.py.ani_nderesarai.ui.viewmodel
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.py.ani_nderesarai.data.model.PaymentReminder
 import com.py.ani_nderesarai.data.repository.BotApiRepository
+import com.py.ani_nderesarai.data.repository.PaymentReminderRepository
 import com.py.ani_nderesarai.data.repository.ApiResult
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
+import java.time.temporal.ChronoUnit
 import javax.inject.Inject
-
-sealed class VerificationStep {
-    object Initial : VerificationStep()
-    object RequestingCode : VerificationStep()
-    object CodeSent : VerificationStep()
-    object Verifying : VerificationStep()
-    object Verified : VerificationStep()
-    data class Error(val message: String) : VerificationStep()
-}
 
 @HiltViewModel
 class NewBotConfigViewModel @Inject constructor(
     application: Application,
-    private val botApiRepository: BotApiRepository
+    private val botApiRepository: BotApiRepository,
+    private val reminderRepository: PaymentReminderRepository
 ) : AndroidViewModel(application) {
 
     private val _uiState = MutableStateFlow(NewBotConfigUiState())
@@ -34,17 +31,17 @@ class NewBotConfigViewModel @Inject constructor(
     val verificationStep: StateFlow<VerificationStep> = _verificationStep.asStateFlow()
 
     init {
-        checkBotConnection()
+        checkBotStatus()
     }
 
     // ============================================
-    // VERIFICACIÓN DEL BOT
+    // VERIFICACIÓN DE ESTADO DEL BOT
     // ============================================
 
-    private fun checkBotConnection() {
+    private fun checkBotStatus() {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isCheckingBot = true)
-            
+
             when (val result = botApiRepository.getBotStatus()) {
                 is ApiResult.Success -> {
                     _uiState.value = _uiState.value.copy(
@@ -57,11 +54,13 @@ class NewBotConfigViewModel @Inject constructor(
                 is ApiResult.Error -> {
                     _uiState.value = _uiState.value.copy(
                         isBotConnected = false,
-                        message = "Error: ${result.message}",
+                        message = "⚠️ No se pudo conectar con el servidor: ${result.message}",
                         isCheckingBot = false
                     )
                 }
-                else -> {}
+                else -> {
+                    _uiState.value = _uiState.value.copy(isCheckingBot = false)
+                }
             }
         }
     }
@@ -104,11 +103,13 @@ class NewBotConfigViewModel @Inject constructor(
                 is ApiResult.Error -> {
                     _verificationStep.value = VerificationStep.Error(result.message)
                     _uiState.value = _uiState.value.copy(
-                        message = "Error: ${result.message}",
+                        message = "❌ ${result.message}",
                         isLoading = false
                     )
                 }
-                else -> {}
+                else -> {
+                    _uiState.value = _uiState.value.copy(isLoading = false)
+                }
             }
         }
     }
@@ -142,7 +143,7 @@ class NewBotConfigViewModel @Inject constructor(
                             message = "🎉 ¡Número verificado exitosamente!",
                             isLoading = false
                         )
-                        
+
                         // Guardar en preferencias
                         saveVerifiedPhone(phoneNumber)
                     } else {
@@ -162,7 +163,9 @@ class NewBotConfigViewModel @Inject constructor(
                         isLoading = false
                     )
                 }
-                else -> {}
+                else -> {
+                    _uiState.value = _uiState.value.copy(isLoading = false)
+                }
             }
         }
     }
@@ -175,7 +178,7 @@ class NewBotConfigViewModel @Inject constructor(
                         isVerified = result.data.verified,
                         phoneNumber = if (result.data.verified) phoneNumber else ""
                     )
-                    
+
                     if (result.data.verified) {
                         _verificationStep.value = VerificationStep.Verified
                         saveVerifiedPhone(phoneNumber)
@@ -204,6 +207,9 @@ class NewBotConfigViewModel @Inject constructor(
     // GESTIÓN DE BOT AUTOMÁTICO
     // ============================================
 
+    /**
+     * ✅ ACTUALIZADO: Ahora envía resumen de recordatorios al activar
+     */
     fun enableBot(hour: Int, minute: Int, daysAhead: Int) {
         if (!_uiState.value.isVerified) {
             _uiState.value = _uiState.value.copy(
@@ -214,21 +220,137 @@ class NewBotConfigViewModel @Inject constructor(
 
         viewModelScope.launch {
             try {
-                // Guardar configuración
-                _uiState.value = _uiState.value.copy(
-                    isBotEnabled = true,
-                    sendHour = hour,
-                    sendMinute = minute,
-                    daysAhead = daysAhead,
-                    message = "✅ Bot activado exitosamente"
-                )
-                
+                _uiState.value = _uiState.value.copy(isLoading = true)
+
+                // 1. Guardar configuración
                 saveBotConfiguration(hour, minute, daysAhead)
+
+                // 2. Obtener recordatorios activos próximos
+                val reminders = reminderRepository.getRemindersForBot(daysAhead)
+
+                // 3. Enviar resumen inicial si hay recordatorios
+                if (reminders.isNotEmpty()) {
+                    val summary = buildRemindersSummary(reminders, hour, minute, daysAhead)
+
+                    when (val result = botApiRepository.sendMessage(
+                        _uiState.value.phoneNumber,
+                        summary
+                    )) {
+                        is ApiResult.Success -> {
+                            _uiState.value = _uiState.value.copy(
+                                isBotEnabled = true,
+                                sendHour = hour,
+                                sendMinute = minute,
+                                daysAhead = daysAhead,
+                                message = "✅ Bot activado. Se envió resumen de ${reminders.size} recordatorio(s)",
+                                isLoading = false
+                            )
+                        }
+                        is ApiResult.Error -> {
+                            // Activar bot pero informar del error en resumen
+                            saveBotConfiguration(hour, minute, daysAhead)
+                            _uiState.value = _uiState.value.copy(
+                                isBotEnabled = true,
+                                sendHour = hour,
+                                sendMinute = minute,
+                                daysAhead = daysAhead,
+                                message = "⚠️ Bot activado pero no se pudo enviar resumen: ${result.message}",
+                                isLoading = false
+                            )
+                        }
+                        else -> {
+                            _uiState.value = _uiState.value.copy(isLoading = false)
+                        }
+                    }
+                } else {
+                    // No hay recordatorios, solo activar
+                    _uiState.value = _uiState.value.copy(
+                        isBotEnabled = true,
+                        sendHour = hour,
+                        sendMinute = minute,
+                        daysAhead = daysAhead,
+                        message = "✅ Bot activado (sin recordatorios próximos)",
+                        isLoading = false
+                    )
+                }
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(
-                    message = "Error al activar el bot: ${e.message}"
+                    message = "Error al activar el bot: ${e.message}",
+                    isLoading = false
                 )
             }
+        }
+    }
+
+    /**
+     * Construye un resumen de recordatorios para enviar por WhatsApp
+     */
+    private fun buildRemindersSummary(
+        reminders: List<PaymentReminder>,
+        hour: Int,
+        minute: Int,
+        daysAhead: Int
+    ): String {
+        val dateFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy")
+
+        return buildString {
+            appendLine("🤖 *Bot de Recordatorios Activado*")
+            appendLine()
+            appendLine("✅ Configuración guardada:")
+            appendLine("⏰ Envío diario: ${String.format("%02d:%02d", hour, minute)}")
+            appendLine("📅 Anticipación: $daysAhead día(s)")
+            appendLine()
+            appendLine("━━━━━━━━━━━━━━━━━━")
+            appendLine()
+            appendLine("📋 *Tienes ${reminders.size} pago(s) próximo(s):*")
+            appendLine()
+
+            reminders.forEachIndexed { index, reminder ->
+                val daysUntil = ChronoUnit.DAYS.between(LocalDate.now(), reminder.dueDate)
+
+                appendLine("*${index + 1}. ${reminder.title}*")
+                appendLine("📅 Vence: ${reminder.dueDate.format(dateFormatter)}")
+
+                when {
+                    daysUntil == 0L -> appendLine("⚠️ ¡Vence HOY!")
+                    daysUntil == 1L -> appendLine("⏰ Vence MAÑANA")
+                    daysUntil < 0 -> appendLine("🔴 ¡Vencido hace ${-daysUntil} día(s)!")
+                    else -> appendLine("⏰ En $daysUntil día(s)")
+                }
+
+                reminder.amount?.let {
+                    appendLine("💰 ${formatCurrency(it, reminder.currency)}")
+                }
+
+                // Info de cuotas
+                if (reminder.isInstallments) {
+                    appendLine("📊 Cuota ${reminder.currentInstallment}/${reminder.totalInstallments}")
+                }
+
+                // Prioridad urgente
+                if (reminder.priority == com.py.ani_nderesarai.data.model.Priority.URGENT) {
+                    appendLine("🔴 URGENTE")
+                }
+
+                appendLine()
+            }
+
+            appendLine("━━━━━━━━━━━━━━━━━━")
+            appendLine()
+            appendLine("💡 *Recordatorios automáticos*")
+            appendLine("Recibirás un resumen cada día a las ${String.format("%02d:%02d", hour, minute)}")
+            appendLine()
+            appendLine("_Enviado por Ani Nderesarai_ 🤖")
+        }
+    }
+
+    private fun formatCurrency(amount: Double, currency: String): String {
+        return when (currency) {
+            "PYG" -> "₲ ${String.format("%,.0f", amount)}"
+            "USD" -> "$ ${String.format("%.2f", amount)}"
+            "EUR" -> "€ ${String.format("%.2f", amount)}"
+            "BRL" -> "R$ ${String.format("%.2f", amount)}"
+            else -> "$currency ${String.format("%.2f", amount)}"
         }
     }
 
@@ -239,7 +361,7 @@ class NewBotConfigViewModel @Inject constructor(
                     isBotEnabled = false,
                     message = "Bot desactivado"
                 )
-                
+
                 clearBotConfiguration()
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(
@@ -252,7 +374,7 @@ class NewBotConfigViewModel @Inject constructor(
     fun testBotConnection() {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true)
-            
+
             when (val result = botApiRepository.sendMessage(
                 _uiState.value.phoneNumber,
                 "✅ Prueba de conexión exitosa.\n\nTu bot de Ani Nderesarai está funcionando correctamente."
@@ -269,7 +391,9 @@ class NewBotConfigViewModel @Inject constructor(
                         isLoading = false
                     )
                 }
-                else -> {}
+                else -> {
+                    _uiState.value = _uiState.value.copy(isLoading = false)
+                }
             }
         }
     }
@@ -317,14 +441,14 @@ class NewBotConfigViewModel @Inject constructor(
             "bot_preferences",
             android.content.Context.MODE_PRIVATE
         )
-        
+
         val isVerified = prefs.getBoolean("is_verified", false)
         val verifiedPhone = prefs.getString("verified_phone", "") ?: ""
         val isBotEnabled = prefs.getBoolean("bot_enabled", false)
         val hour = prefs.getInt("send_hour", 9)
         val minute = prefs.getInt("send_minute", 0)
         val daysAhead = prefs.getInt("days_ahead", 3)
-        
+
         _uiState.value = _uiState.value.copy(
             isVerified = isVerified,
             phoneNumber = verifiedPhone,
@@ -333,7 +457,7 @@ class NewBotConfigViewModel @Inject constructor(
             sendMinute = minute,
             daysAhead = daysAhead
         )
-        
+
         if (isVerified && verifiedPhone.isNotBlank()) {
             _verificationStep.value = VerificationStep.Verified
         }
@@ -344,17 +468,33 @@ class NewBotConfigViewModel @Inject constructor(
     }
 }
 
+// ============================================
+// UI STATE
+// ============================================
+
 data class NewBotConfigUiState(
     val isBotConnected: Boolean = false,
     val botUser: String? = null,
     val botPhone: String? = null,
     val isCheckingBot: Boolean = false,
+
     val isVerified: Boolean = false,
     val phoneNumber: String = "",
+
     val isBotEnabled: Boolean = false,
     val sendHour: Int = 9,
     val sendMinute: Int = 0,
     val daysAhead: Int = 3,
-    val message: String? = null,
-    val isLoading: Boolean = false
+
+    val isLoading: Boolean = false,
+    val message: String? = null
 )
+
+sealed class VerificationStep {
+    object Initial : VerificationStep()
+    object RequestingCode : VerificationStep()
+    object CodeSent : VerificationStep()
+    object Verifying : VerificationStep()
+    object Verified : VerificationStep()
+    data class Error(val message: String) : VerificationStep()
+}

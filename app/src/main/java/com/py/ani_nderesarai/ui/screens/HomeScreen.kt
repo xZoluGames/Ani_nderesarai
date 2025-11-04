@@ -1,34 +1,21 @@
 package com.py.ani_nderesarai.ui.screens
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.py.ani_nderesarai.data.model.PaymentReminder
-import com.py.ani_nderesarai.ui.components.getCategoryIcon
-import com.py.ani_nderesarai.ui.components.getCategoryName
-import com.py.ani_nderesarai.ui.components.getPriorityColor
+import com.py.ani_nderesarai.ui.components.ReminderCard
 import com.py.ani_nderesarai.ui.viewmodel.HomeViewModel
-import com.py.ani_nderesarai.utils.WhatsAppBotManager
-import java.time.LocalDate
-import java.time.LocalDateTime
-import java.time.format.DateTimeFormatter
-import java.time.temporal.ChronoUnit
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -38,17 +25,17 @@ fun HomeScreen(
     onNavigateToBotConfig: () -> Unit,
     viewModel: HomeViewModel = hiltViewModel()
 ) {
-    val reminders by viewModel.activeReminders.collectAsState()
-    val uiState by viewModel.uiState.collectAsState()
     val context = LocalContext.current
+    val uiState by viewModel.uiState.collectAsState()
+    val activeReminders by viewModel.activeReminders.collectAsState()
+    val paidReminders by viewModel.paidReminders.collectAsState()
+    val cancelledReminders by viewModel.cancelledReminders.collectAsState()
+    val selectedTab by viewModel.selectedTab.collectAsState()
 
-    var showOverdueSection by remember { mutableStateOf(false) }
     var showMenu by remember { mutableStateOf(false) }
+    var showDeleteDialog by remember { mutableStateOf<PaymentReminder?>(null) }
 
-    // Estado del bot
-    val botManager = remember { WhatsAppBotManager(context) }
-    val botStatus = remember { botManager.getBotStatus() }
-
+    // Limpiar mensaje después de 3 segundos
     LaunchedEffect(uiState.message) {
         uiState.message?.let {
             kotlinx.coroutines.delay(3000)
@@ -58,24 +45,35 @@ fun HomeScreen(
 
     Scaffold(
         topBar = {
-            CenterAlignedTopAppBar(
+            TopAppBar(
                 title = {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Column {
                         Text(
                             text = "Ani Nderesarai",
                             style = MaterialTheme.typography.titleLarge
                         )
-                        Text(
-                            text = "Tus recordatorios de pago",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
+                        if (!uiState.isLoading && uiState.activeCount > 0) {
+                            Text(
+                                text = "${uiState.activeCount} activos • ${uiState.overdueCount} vencidos",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = if (uiState.overdueCount > 0)
+                                    MaterialTheme.colorScheme.error
+                                else
+                                    MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
                     }
                 },
-                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+                colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.primaryContainer
                 ),
                 actions = {
+                    // Botón de búsqueda/filtros
+                    IconButton(onClick = { viewModel.toggleFilterDialog() }) {
+                        Icon(Icons.Default.FilterList, contentDescription = "Filtros")
+                    }
+
+                    // Menú
                     Box {
                         IconButton(onClick = { showMenu = true }) {
                             Icon(Icons.Default.MoreVert, contentDescription = "Menú")
@@ -92,22 +90,18 @@ fun HomeScreen(
                                     showMenu = false
                                 },
                                 leadingIcon = {
-                                    Icon(
-                                        Icons.Default.SmartToy,
-                                        contentDescription = null,
-                                        tint = if (botStatus.isEnabled)
-                                            MaterialTheme.colorScheme.primary
-                                        else MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
+                                    Icon(Icons.Default.SmartToy, contentDescription = null)
+                                }
+                            )
+
+                            DropdownMenuItem(
+                                text = { Text("Actualizar") },
+                                onClick = {
+                                    viewModel.refreshReminders()
+                                    showMenu = false
                                 },
-                                trailingIcon = {
-                                    if (botStatus.isEnabled) {
-                                        Badge(
-                                            containerColor = MaterialTheme.colorScheme.primary
-                                        ) {
-                                            Text("ON", style = MaterialTheme.typography.labelSmall)
-                                        }
-                                    }
+                                leadingIcon = {
+                                    Icon(Icons.Default.Refresh, contentDescription = null)
                                 }
                             )
 
@@ -121,30 +115,6 @@ fun HomeScreen(
                                 },
                                 leadingIcon = {
                                     Icon(Icons.Default.BarChart, contentDescription = null)
-                                }
-                            )
-
-                            DropdownMenuItem(
-                                text = { Text("Configuración") },
-                                onClick = {
-                                    // TODO: Navegar a configuración
-                                    showMenu = false
-                                },
-                                leadingIcon = {
-                                    Icon(Icons.Default.Settings, contentDescription = null)
-                                }
-                            )
-
-                            HorizontalDivider()
-
-                            DropdownMenuItem(
-                                text = { Text("Acerca de") },
-                                onClick = {
-                                    // TODO: Mostrar acerca de
-                                    showMenu = false
-                                },
-                                leadingIcon = {
-                                    Icon(Icons.Default.Info, contentDescription = null)
                                 }
                             )
                         }
@@ -161,90 +131,96 @@ fun HomeScreen(
             }
         }
     ) { paddingValues ->
-        Box(
+        Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
-            if (reminders.isEmpty()) {
-                EmptyState(
+            // Sistema de Tabs
+            TabRow(
+                selectedTabIndex = selectedTab,
+                containerColor = MaterialTheme.colorScheme.surface
+            ) {
+                Tab(
+                    selected = selectedTab == 0,
+                    onClick = { viewModel.selectTab(0) },
+                    text = {
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text("Activos")
+                            if (uiState.activeCount > 0) {
+                                Badge {
+                                    Text("${uiState.activeCount}")
+                                }
+                            }
+                        }
+                    },
+                    icon = { Icon(Icons.Default.Notifications, contentDescription = null) }
+                )
+
+                Tab(
+                    selected = selectedTab == 1,
+                    onClick = { viewModel.selectTab(1) },
+                    text = {
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text("Pagados")
+                            if (uiState.paidCount > 0) {
+                                Badge(containerColor = MaterialTheme.colorScheme.tertiary) {
+                                    Text("${uiState.paidCount}")
+                                }
+                            }
+                        }
+                    },
+                    icon = { Icon(Icons.Default.CheckCircle, contentDescription = null) }
+                )
+
+                Tab(
+                    selected = selectedTab == 2,
+                    onClick = { viewModel.selectTab(2) },
+                    text = { Text("Cancelados") },
+                    icon = { Icon(Icons.Default.Cancel, contentDescription = null) }
+                )
+            }
+
+            // Contenido de tabs
+            when (selectedTab) {
+                0 -> ActiveTab(
+                    activeReminders = activeReminders,
+                    overdueReminders = uiState.overdueReminders,
+                    isLoading = uiState.isLoading,
+                    onEdit = onNavigateToEditReminder,
+                    onMarkAsPaid = { viewModel.markAsPaid(it) },
+                    onCancel = { viewModel.cancelReminder(it) },
+                    onDelete = { showDeleteDialog = it },
+                    onSendWhatsApp = { viewModel.sendWhatsAppReminder(it) },
                     onAddClick = onNavigateToAddReminder,
                     onConfigureBotClick = onNavigateToBotConfig
                 )
-            } else {
-                LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    // Card del Bot (si tiene recordatorios)
-                    if (reminders.isNotEmpty()) {
-                        item {
-                            BotStatusCard(
-                                isEnabled = botStatus.isEnabled,
-                                nextExecution = botStatus.nextExecution,
-                                onConfigureClick = onNavigateToBotConfig
-                            )
-                        }
-                    }
 
-                    // Sección de vencidos
-                    if (uiState.overdueReminders.isNotEmpty()) {
-                        item {
-                            OverdueSection(
-                                overdueCount = uiState.overdueReminders.size,
-                                isExpanded = showOverdueSection,
-                                onToggle = { showOverdueSection = !showOverdueSection }
-                            )
-                        }
+                1 -> PaidTab(
+                    paidReminders = paidReminders,
+                    onEdit = onNavigateToEditReminder,
+                    onDelete = { showDeleteDialog = it }
+                )
 
-                        if (showOverdueSection) {
-                            items(uiState.overdueReminders) { reminder ->
-                                ReminderCard(
-                                    reminder = reminder,
-                                    isOverdue = true,
-                                    onEdit = { onNavigateToEditReminder(reminder.id) },
-                                    onMarkAsPaid = { viewModel.markAsPaid(reminder) },
-                                    onDelete = { viewModel.deleteReminder(reminder) },
-                                    onSendWhatsApp = {
-                                        viewModel.sendWhatsAppReminder(context, reminder)
-                                    }
-                                )
-                            }
-                        }
-                    }
-
-                    // Título de próximos vencimientos
-                    if (uiState.upcomingReminders.isNotEmpty()) {
-                        item {
-                            Text(
-                                text = "Próximos Vencimientos",
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold,
-                                modifier = Modifier.padding(vertical = 8.dp)
-                            )
-                        }
-
-                        items(uiState.upcomingReminders) { reminder ->
-                            ReminderCard(
-                                reminder = reminder,
-                                isOverdue = false,
-                                onEdit = { onNavigateToEditReminder(reminder.id) },
-                                onMarkAsPaid = { viewModel.markAsPaid(reminder) },
-                                onDelete = { viewModel.deleteReminder(reminder) },
-                                onSendWhatsApp = {
-                                    viewModel.sendWhatsAppReminder(context, reminder)
-                                }
-                            )
-                        }
-                    }
-                }
+                2 -> CancelledTab(
+                    cancelledReminders = cancelledReminders,
+                    onReactivate = { viewModel.reactivateReminder(it) },
+                    onDelete = { showDeleteDialog = it }
+                )
             }
 
             // Snackbar para mensajes
             uiState.message?.let { message ->
                 Snackbar(
-                    modifier = Modifier.align(Alignment.BottomCenter),
+                    modifier = Modifier
+                        .padding(16.dp)
+                        .align(Alignment.CenterHorizontally),
                     action = {
                         TextButton(onClick = { viewModel.clearMessage() }) {
                             Text("OK")
@@ -256,365 +232,248 @@ fun HomeScreen(
             }
         }
     }
+
+    // Dialog de confirmación de eliminación
+    showDeleteDialog?.let { reminder ->
+        AlertDialog(
+            onDismissRequest = { showDeleteDialog = null },
+            title = { Text("Eliminar recordatorio") },
+            text = {
+                Text("¿Estás seguro de eliminar \"${reminder.title}\"? Esta acción no se puede deshacer.")
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        viewModel.deleteReminder(reminder)
+                        showDeleteDialog = null
+                    },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.error
+                    )
+                ) {
+                    Text("Eliminar")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteDialog = null }) {
+                    Text("Cancelar")
+                }
+            }
+        )
+    }
+
+    // Dialog de filtros
+    if (uiState.showFilterDialog) {
+        FilterDialog(
+            onDismiss = { viewModel.toggleFilterDialog() },
+            onApplyFilters = { filters ->
+                viewModel.applyFilters(filters)
+                viewModel.toggleFilterDialog()
+            },
+            onClearFilters = {
+                viewModel.clearFilters()
+                viewModel.toggleFilterDialog()
+            }
+        )
+    }
 }
 
+// ============================================
+// TAB DE ACTIVOS
+// ============================================
+
 @Composable
-fun BotStatusCard(
-    isEnabled: Boolean,
-    nextExecution: LocalDateTime?,
-    onConfigureClick: () -> Unit
+fun ActiveTab(
+    activeReminders: List<PaymentReminder>,
+    overdueReminders: List<PaymentReminder>,
+    isLoading: Boolean,
+    onEdit: (Long) -> Unit,
+    onMarkAsPaid: (PaymentReminder) -> Unit,
+    onCancel: (PaymentReminder) -> Unit,
+    onDelete: (PaymentReminder) -> Unit,
+    onSendWhatsApp: (PaymentReminder) -> Unit,
+    onAddClick: () -> Unit,
+    onConfigureBotClick: () -> Unit
 ) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable { onConfigureClick() },
-        colors = CardDefaults.cardColors(
-            containerColor = if (isEnabled)
-                MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.7f)
-            else MaterialTheme.colorScheme.surfaceVariant
-        )
-    ) {
-        Row(
-            modifier = Modifier.padding(16.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+    if (isLoading) {
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
         ) {
-            Row(
-                modifier = Modifier.weight(1f),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Box(
-                    modifier = Modifier.size(40.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    if (isEnabled) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(40.dp),
-                            strokeWidth = 2.dp,
-                            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.3f)
-                        )
-                    }
-                    Icon(
-                        Icons.Default.SmartToy,
-                        contentDescription = null,
-                        tint = if (isEnabled)
-                            MaterialTheme.colorScheme.primary
-                        else MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.size(24.dp)
-                    )
-                }
-
-                Column(modifier = Modifier.weight(1f)) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        Text(
-                            text = "Bot WhatsApp",
-                            style = MaterialTheme.typography.titleSmall,
-                            fontWeight = FontWeight.Bold
-                        )
-                        if (isEnabled) {
-                            Badge(
-                                containerColor = MaterialTheme.colorScheme.primary
-                            ) {
-                                Text("ACTIVO", style = MaterialTheme.typography.labelSmall)
-                            }
-                        }
-                    }
-
+            CircularProgressIndicator()
+        }
+    } else if (activeReminders.isEmpty()) {
+        EmptyState(
+            onAddClick = onAddClick,
+            onConfigureBotClick = onConfigureBotClick
+        )
+    } else {
+        LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            // Sección de vencidos
+            if (overdueReminders.isNotEmpty()) {
+                item {
                     Text(
-                        text = if (isEnabled) {
-                            nextExecution?.let {
-                                "Próximo envío: ${formatNextExecution(it)}"
-                            } ?: "Configurando..."
-                        } else {
-                            "Toca para activar notificaciones automáticas"
-                        },
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        text = "⚠️ Vencidos (${overdueReminders.size})",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.padding(vertical = 8.dp)
+                    )
+                }
+
+                items(overdueReminders) { reminder ->
+                    ReminderCard(
+                        reminder = reminder,
+                        isOverdue = true,
+                        onEdit = { onEdit(reminder.id) },
+                        onMarkAsPaid = { onMarkAsPaid(reminder) },
+                        onCancel = { onCancel(reminder) },
+                        onDelete = { onDelete(reminder) },
+                        onSendWhatsApp = { onSendWhatsApp(reminder) }
                     )
                 }
             }
 
-            Icon(
-                Icons.Default.KeyboardArrowRight,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun ReminderCard(
-    reminder: PaymentReminder,
-    isOverdue: Boolean,
-    onEdit: () -> Unit,
-    onMarkAsPaid: () -> Unit,
-    onDelete: () -> Unit,
-    onSendWhatsApp: () -> Unit
-) {
-    var expanded by remember { mutableStateOf(false) }
-    val dateFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy")
-    val today = LocalDate.now()
-    val daysUntilDue = ChronoUnit.DAYS.between(today, reminder.dueDate)
-
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable { onEdit() },
-        colors = CardDefaults.cardColors(
-            containerColor = if (isOverdue)
-                MaterialTheme.colorScheme.errorContainer
-            else MaterialTheme.colorScheme.surface
-        )
-    ) {
-        Column(
-            modifier = Modifier.padding(16.dp)
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.Top
-            ) {
-                Row(
-                    modifier = Modifier.weight(1f),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    // Indicador de prioridad
-                    Box(
-                        modifier = Modifier
-                            .width(4.dp)
-                            .height(56.dp)
-                            .clip(RoundedCornerShape(2.dp))
-                            .background(getPriorityColor(reminder.priority))
+            // Sección de próximos
+            val upcoming = activeReminders.filter { it.dueDate >= java.time.LocalDate.now() }
+            if (upcoming.isNotEmpty()) {
+                item {
+                    Text(
+                        text = "📅 Próximos (${upcoming.size})",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(vertical = 8.dp)
                     )
-
-                    // Icono de categoría
-                    Icon(
-                        imageVector = getCategoryIcon(reminder.category),
-                        contentDescription = null,
-                        modifier = Modifier.size(24.dp),
-                        tint = MaterialTheme.colorScheme.primary
-                    )
-
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = reminder.title,
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-
-                        if (reminder.description.isNotBlank()) {
-                            Text(
-                                text = reminder.description,
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
-                            )
-                        }
-
-                        Spacer(modifier = Modifier.height(4.dp))
-
-                        Row(
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            // Fecha de vencimiento
-                            AssistChip(
-                                onClick = { },
-                                label = {
-                                    Text(
-                                        text = when {
-                                            isOverdue -> "Vencido hace ${-daysUntilDue} días"
-                                            daysUntilDue == 0L -> "Vence hoy"
-                                            daysUntilDue == 1L -> "Vence mañana"
-                                            else -> "Vence en $daysUntilDue días"
-                                        },
-                                        style = MaterialTheme.typography.labelSmall
-                                    )
-                                },
-                                leadingIcon = {
-                                    Icon(
-                                        Icons.Default.DateRange,
-                                        contentDescription = null,
-                                        modifier = Modifier.size(16.dp)
-                                    )
-                                },
-                                colors = AssistChipDefaults.assistChipColors(
-                                    containerColor = when {
-                                        isOverdue -> MaterialTheme.colorScheme.error.copy(alpha = 0.1f)
-                                        daysUntilDue <= 3 -> MaterialTheme.colorScheme.tertiary.copy(alpha = 0.1f)
-                                        else -> MaterialTheme.colorScheme.secondaryContainer
-                                    }
-                                )
-                            )
-
-                            // Monto si existe
-                            reminder.amount?.let { amount ->
-                                AssistChip(
-                                    onClick = { },
-                                    label = {
-                                        Text(
-                                            text = formatAmount(amount, reminder.currency),
-                                            style = MaterialTheme.typography.labelSmall,
-                                            fontWeight = FontWeight.Bold
-                                        )
-                                    },
-                                    leadingIcon = {
-                                        Icon(
-                                            Icons.Default.AttachMoney,
-                                            contentDescription = null,
-                                            modifier = Modifier.size(16.dp)
-                                        )
-                                    }
-                                )
-                            }
-                        }
-
-                        // Indicadores adicionales
-                        Row(
-                            horizontalArrangement = Arrangement.spacedBy(4.dp),
-                            modifier = Modifier.padding(top = 4.dp)
-                        ) {
-                            if (reminder.isRecurring) {
-                                Icon(
-                                    Icons.Default.Repeat,
-                                    contentDescription = "Recurrente",
-                                    modifier = Modifier.size(16.dp),
-                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                            if (reminder.whatsappNumber.isNotBlank()) {
-                                Icon(
-                                    Icons.Default.Whatsapp,
-                                    contentDescription = "WhatsApp configurado",
-                                    modifier = Modifier.size(16.dp),
-                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                        }
-                    }
                 }
 
-                // Menú de opciones
-                Box {
-                    IconButton(onClick = { expanded = true }) {
-                        Icon(Icons.Default.MoreVert, contentDescription = "Opciones")
-                    }
-
-                    DropdownMenu(
-                        expanded = expanded,
-                        onDismissRequest = { expanded = false }
-                    ) {
-                        DropdownMenuItem(
-                            text = { Text("Marcar como pagado") },
-                            onClick = {
-                                onMarkAsPaid()
-                                expanded = false
-                            },
-                            leadingIcon = {
-                                Icon(Icons.Default.CheckCircle, contentDescription = null)
-                            }
-                        )
-
-                        if (reminder.whatsappNumber.isNotBlank()) {
-                            DropdownMenuItem(
-                                text = { Text("Enviar por WhatsApp") },
-                                onClick = {
-                                    onSendWhatsApp()
-                                    expanded = false
-                                },
-                                leadingIcon = {
-                                    Icon(Icons.Default.Send, contentDescription = null)
-                                }
-                            )
-                        }
-
-                        DropdownMenuItem(
-                            text = { Text("Editar") },
-                            onClick = {
-                                onEdit()
-                                expanded = false
-                            },
-                            leadingIcon = {
-                                Icon(Icons.Default.Edit, contentDescription = null)
-                            }
-                        )
-
-                        HorizontalDivider()
-
-                        DropdownMenuItem(
-                            text = { Text("Eliminar", color = MaterialTheme.colorScheme.error) },
-                            onClick = {
-                                onDelete()
-                                expanded = false
-                            },
-                            leadingIcon = {
-                                Icon(
-                                    Icons.Default.Delete,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.error
-                                )
-                            }
-                        )
-                    }
+                items(upcoming) { reminder ->
+                    ReminderCard(
+                        reminder = reminder,
+                        isOverdue = false,
+                        onEdit = { onEdit(reminder.id) },
+                        onMarkAsPaid = { onMarkAsPaid(reminder) },
+                        onCancel = { onCancel(reminder) },
+                        onDelete = { onDelete(reminder) },
+                        onSendWhatsApp = { onSendWhatsApp(reminder) }
+                    )
                 }
             }
         }
     }
 }
 
+// ============================================
+// TAB DE PAGADOS
+// ============================================
+
 @Composable
-fun OverdueSection(
-    overdueCount: Int,
-    isExpanded: Boolean,
-    onToggle: () -> Unit
+fun PaidTab(
+    paidReminders: List<PaymentReminder>,
+    onEdit: (Long) -> Unit,
+    onDelete: (PaymentReminder) -> Unit
 ) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable { onToggle() },
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.errorContainer
-        )
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+    if (paidReminders.isEmpty()) {
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
         ) {
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 Icon(
-                    Icons.Default.Warning,
+                    Icons.Default.CheckCircle,
                     contentDescription = null,
-                    tint = MaterialTheme.colorScheme.error
+                    modifier = Modifier.size(80.dp),
+                    tint = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.5f)
                 )
                 Text(
-                    text = "$overdueCount pagos vencidos",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.error
+                    text = "No hay pagos registrados",
+                    style = MaterialTheme.typography.titleMedium
                 )
             }
-
-            Icon(
-                imageVector = if (isExpanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
-                contentDescription = null
-            )
+        }
+    } else {
+        LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            items(paidReminders) { reminder ->
+                ReminderCard(
+                    reminder = reminder,
+                    isPaid = true,
+                    onEdit = { onEdit(reminder.id) },
+                    onDelete = { onDelete(reminder) },
+                    onMarkAsPaid = {},  // Ya está pagado
+                    onCancel = {},      // No aplica
+                    onSendWhatsApp = {} // No aplica
+                )
+            }
         }
     }
 }
+
+// ============================================
+// TAB DE CANCELADOS
+// ============================================
+
+@Composable
+fun CancelledTab(
+    cancelledReminders: List<PaymentReminder>,
+    onReactivate: (PaymentReminder) -> Unit,
+    onDelete: (PaymentReminder) -> Unit
+) {
+    if (cancelledReminders.isEmpty()) {
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                Icon(
+                    Icons.Default.Cancel,
+                    contentDescription = null,
+                    modifier = Modifier.size(80.dp),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                )
+                Text(
+                    text = "No hay deudas canceladas",
+                    style = MaterialTheme.typography.titleMedium
+                )
+            }
+        }
+    } else {
+        LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            items(cancelledReminders) { reminder ->
+                ReminderCard(
+                    reminder = reminder,
+                    isCancelled = true,
+                    onReactivate = { onReactivate(reminder) },
+                    onDelete = { onDelete(reminder) },
+                    onEdit = {},
+                    onMarkAsPaid = {},
+                    onCancel = {},
+                    onSendWhatsApp = {}
+                )
+            }
+        }
+    }
+}
+
+// ============================================
+// ESTADO VACÍO
+// ============================================
 
 @Composable
 fun EmptyState(
@@ -664,33 +523,6 @@ fun EmptyState(
             Icon(Icons.Default.SmartToy, contentDescription = null)
             Spacer(modifier = Modifier.width(8.dp))
             Text("Configurar Bot")
-        }
-    }
-}
-
-fun formatAmount(amount: Double, currency: String): String {
-    return when (currency) {
-        "PYG" -> "₲ ${String.format("%,.0f", amount)}"
-        "USD" -> "$ ${String.format("%.2f", amount)}"
-        "EUR" -> "€ ${String.format("%.2f", amount)}"
-        else -> "$currency ${String.format("%.2f", amount)}"
-    }
-}
-
-private fun formatNextExecution(nextExecution: LocalDateTime): String {
-    val now = LocalDateTime.now()
-    val timeFormatter = DateTimeFormatter.ofPattern("HH:mm")
-
-    return when {
-        nextExecution.toLocalDate() == now.toLocalDate() -> {
-            "Hoy ${nextExecution.format(timeFormatter)}"
-        }
-        nextExecution.toLocalDate() == now.toLocalDate().plusDays(1) -> {
-            "Mañana ${nextExecution.format(timeFormatter)}"
-        }
-        else -> {
-            val dateFormatter = DateTimeFormatter.ofPattern("dd/MM HH:mm")
-            nextExecution.format(dateFormatter)
         }
     }
 }
