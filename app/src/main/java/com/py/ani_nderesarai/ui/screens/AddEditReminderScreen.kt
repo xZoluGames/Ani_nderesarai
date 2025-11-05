@@ -251,8 +251,9 @@ fun AddEditReminderScreen(
 
                     DatePickerField(
                         selectedDate = dueDate,
-                        onDateSelected = { it?.let { dueDate = it } },
-                        label = "Fecha de vencimiento"
+                        onDateSelected = { date: LocalDate? -> dueDate = date },
+                        label = "Fecha de vencimiento",
+                        modifier = Modifier // Esto obliga a usar la versión con `Modifier`
                     )
 
                     TimePickerField(

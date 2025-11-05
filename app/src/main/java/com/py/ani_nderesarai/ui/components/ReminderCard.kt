@@ -16,7 +16,9 @@ import com.py.ani_nderesarai.data.model.*
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
-
+import com.py.ani_nderesarai.ui.utils.getPriorityIcon
+import com.py.ani_nderesarai.ui.utils.getPriorityColor
+import com.py.ani_nderesarai.ui.utils.getPriorityLabel
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ReminderCard(
@@ -504,14 +506,6 @@ private fun getPriorityLabel(priority: Priority): String {
     }
 }
 
-private fun getPriorityIcon(priority: Priority): androidx.compose.ui.graphics.vector.ImageVector {
-    return when (priority) {
-        Priority.LOW -> Icons.Default.KeyboardArrowDown
-        Priority.MEDIUM -> Icons.Default.Remove
-        Priority.HIGH -> Icons.Default.KeyboardArrowUp
-        Priority.URGENT -> Icons.Default.PriorityHigh
-    }
-}
 
 private fun formatCurrency(amount: Double, currency: String): String {
     return when (currency) {

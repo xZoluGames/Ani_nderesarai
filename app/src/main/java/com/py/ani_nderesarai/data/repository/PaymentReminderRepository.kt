@@ -3,7 +3,7 @@ package com.py.ani_nderesarai.data.repository
 import com.py.ani_nderesarai.data.database.PaymentReminderDao
 import com.py.ani_nderesarai.data.model.*
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.first
 import java.time.LocalDate
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -50,9 +50,6 @@ class PaymentReminderRepository @Inject constructor(
     fun getOverdueReminders(): Flow<List<PaymentReminder>> =
         dao.getOverdueReminders()
 
-    /**
-     * Obtiene recordatorios próximos en los siguientes X días
-     */
     fun getUpcomingReminders(daysAhead: Int = 7): Flow<List<PaymentReminder>> {
         val today = LocalDate.now()
         val endDate = today.plusDays(daysAhead.toLong())
@@ -72,9 +69,6 @@ class PaymentReminderRepository @Inject constructor(
     fun searchReminders(query: String): Flow<List<PaymentReminder>> =
         dao.searchReminders(query)
 
-    /**
-     * Búsqueda avanzada con múltiples filtros
-     */
     fun getFilteredReminders(
         filters: ReminderFilters,
         orderBy: String = "DATE_ASC"
@@ -95,17 +89,10 @@ class PaymentReminderRepository @Inject constructor(
     // GESTIÓN DE ESTADOS
     // ============================================
 
-    /**
-     * Marca un recordatorio como pagado
-     * Si es recurrente, crea el siguiente recordatorio
-     * Si es en cuotas, avanza a la siguiente cuota
-     */
     suspend fun markAsPaid(reminder: PaymentReminder) {
         when {
-            // Pago en cuotas
             reminder.isInstallments -> {
                 if (reminder.currentInstallment < reminder.totalInstallments) {
-                    // Avanzar a la siguiente cuota
                     val nextDueDate = reminder.dueDate.plusDays(reminder.installmentInterval.toLong())
                     dao.updateReminder(
                         reminder.copy(
@@ -119,36 +106,25 @@ class PaymentReminderRepository @Inject constructor(
                         )
                     )
                 } else {
-                    // Última cuota - marcar como pagado completamente
                     dao.markAsPaid(reminder.id)
                 }
             }
 
-            // Pago recurrente
             reminder.isRecurring -> {
-                // Marcar actual como pagado
                 dao.markAsPaid(reminder.id)
-                // Crear siguiente recordatorio
                 scheduleNextRecurringReminder(reminder)
             }
 
-            // Pago único
             else -> {
                 dao.markAsPaid(reminder.id)
             }
         }
     }
 
-    /**
-     * Cancela un recordatorio (lo mueve a cancelados)
-     */
     suspend fun cancelReminder(id: Long) {
         dao.markAsCancelled(id)
     }
 
-    /**
-     * Reactiva un recordatorio cancelado
-     */
     suspend fun reactivateReminder(id: Long) {
         dao.reactivateReminder(id)
     }
@@ -160,9 +136,6 @@ class PaymentReminderRepository @Inject constructor(
     fun getInstallmentReminders(): Flow<List<PaymentReminder>> =
         dao.getInstallmentReminders()
 
-    /**
-     * Crea un recordatorio con sistema de cuotas
-     */
     suspend fun createInstallmentReminder(
         baseReminder: PaymentReminder,
         totalInstallments: Int,
@@ -173,7 +146,7 @@ class PaymentReminderRepository @Inject constructor(
             totalInstallments = totalInstallments,
             currentInstallment = 1,
             installmentInterval = intervalDays,
-            amount = baseReminder.amount?.div(totalInstallments) // Dividir monto por cuotas
+            amount = baseReminder.amount?.div(totalInstallments)
         )
         return dao.insertReminder(installmentReminder)
     }
@@ -182,15 +155,12 @@ class PaymentReminderRepository @Inject constructor(
     // RECURRENCIA
     // ============================================
 
-    /**
-     * Programa el siguiente recordatorio recurrente
-     */
     suspend fun scheduleNextRecurringReminder(reminder: PaymentReminder) {
         if (!reminder.isRecurring) return
 
         val nextDueDate = calculateNextDueDate(reminder)
         val nextReminder = reminder.copy(
-            id = 0, // Nuevo ID (autoincrement)
+            id = 0,
             dueDate = nextDueDate,
             lastPaid = null,
             isPaid = false,
@@ -235,20 +205,19 @@ class PaymentReminderRepository @Inject constructor(
         return dao.getTotalPaidInPeriod(startDate, endDate) ?: 0.0
     }
 
+    // ✅ CORREGIDO: Ahora devuelve List<CategoryStatistic>
+    suspend fun getCategoryStatistics(): List<CategoryStatistic> {
+        return dao.getCategoryStatistics()
+    }
+
     // ============================================
     // MANTENIMIENTO
     // ============================================
 
-    /**
-     * Actualiza estados de recordatorios vencidos
-     */
     suspend fun updateOverdueStatus() {
         dao.updateOverdueStatus()
     }
 
-    /**
-     * Limpia recordatorios cancelados antiguos (más de 90 días)
-     */
     suspend fun cleanupOldCancelledReminders(daysOld: Int = 90) {
         val beforeDate = LocalDate.now().minusDays(daysOld.toLong())
         dao.deleteOldCancelledReminders(beforeDate)
@@ -258,32 +227,12 @@ class PaymentReminderRepository @Inject constructor(
     // OBTENER RECORDATORIOS PARA EL BOT
     // ============================================
 
-    /**
-     * Obtiene recordatorios que el bot debe enviar
-     * (próximos X días, activos)
-     */
     suspend fun getRemindersForBot(daysAhead: Int): List<PaymentReminder> {
         val today = LocalDate.now()
         val endDate = today.plusDays(daysAhead.toLong())
 
         return dao.getRemindersByDateRange(today, endDate)
-            .map { reminders ->
-                reminders.filter { it.status == ReminderStatus.ACTIVE && it.whatsappNumber.isNotBlank() }
-            }
-            .map { it }
-            .let { flow ->
-                // Convertir Flow a List (tomar primer valor)
-                var result: List<PaymentReminder> = emptyList()
-                flow.collect { result = it }
-                result
-            }
+            .first()
+            .filter { it.status == ReminderStatus.ACTIVE && it.whatsappNumber.isNotBlank() }
     }
 }
-
-// ✅ Data class para estadísticas
-data class ReminderStatistics(
-    val activeCount: Int,
-    val overdueCount: Int,
-    val paidCount: Int,
-    val totalPendingAmount: Double
-)

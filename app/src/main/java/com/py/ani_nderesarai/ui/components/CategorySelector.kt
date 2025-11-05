@@ -1,97 +1,100 @@
 package com.py.ani_nderesarai.ui.components
 
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import com.py.ani_nderesarai.data.model.PaymentCategory
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CategorySelector(
     selectedCategory: PaymentCategory,
-    onCategorySelected: (PaymentCategory) -> Unit
+    onCategorySelected: (PaymentCategory) -> Unit,
+    modifier: Modifier = Modifier
 ) {
-    Column(
-        verticalArrangement = Arrangement.spacedBy(8.dp)
+    var expanded by remember { mutableStateOf(false) }
+
+    ExposedDropdownMenuBox(
+        expanded = expanded,
+        onExpandedChange = { expanded = it },
+        modifier = modifier
     ) {
-        Text(
-            text = "Categoría",
-            style = MaterialTheme.typography.labelMedium
+        OutlinedTextField(
+            value = getCategoryLabel(selectedCategory),
+            onValueChange = {},
+            readOnly = true,
+            label = { Text("Categoría") },
+            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+            leadingIcon = { Icon(getCategoryIcon(selectedCategory), contentDescription = null) },
+            modifier = Modifier
+                .fillMaxWidth()
+                .menuAnchor()
         )
-        
-        LazyRow(
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+
+        ExposedDropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false }
         ) {
-            items(PaymentCategory.values()) { category ->
-                CategoryChip(
-                    category = category,
-                    isSelected = category == selectedCategory,
-                    onClick = { onCategorySelected(category) }
+            PaymentCategory.values().forEach { category ->
+                DropdownMenuItem(
+                    text = { Text(getCategoryLabel(category)) },
+                    onClick = {
+                        onCategorySelected(category)
+                        expanded = false
+                    },
+                    leadingIcon = {
+                        Icon(getCategoryIcon(category), contentDescription = null)
+                    }
                 )
             }
         }
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun CategoryChip(
-    category: PaymentCategory,
-    isSelected: Boolean,
-    onClick: () -> Unit
-) {
-    FilterChip(
-        onClick = onClick,
-        label = {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(4.dp)
-            ) {
-                Icon(
-                    imageVector = getCategoryIcon(category),
-                    contentDescription = null,
-                    modifier = Modifier.size(16.dp)
-                )
-                Text(getCategoryName(category))
-            }
-        },
-        selected = isSelected
-    )
-}
-
-fun getCategoryIcon(category: PaymentCategory): ImageVector {
+fun getCategoryLabel(category: PaymentCategory): String {
     return when (category) {
-        PaymentCategory.UTILITIES -> Icons.Default.ElectricBolt
-        PaymentCategory.LOANS -> Icons.Default.AccountBalance
-        PaymentCategory.CREDIT_CARDS -> Icons.Default.CreditCard
-        PaymentCategory.INSURANCE -> Icons.Default.Security
-        PaymentCategory.RENT -> Icons.Default.Home
-        PaymentCategory.SUBSCRIPTIONS -> Icons.Default.Subscriptions
-        PaymentCategory.TAXES -> Icons.Default.Receipt
-        PaymentCategory.EDUCATION -> Icons.Default.School
-        PaymentCategory.HEALTH -> Icons.Default.LocalHospital
-        PaymentCategory.OTHER -> Icons.Default.Category
-    }
-}
-
-fun getCategoryName(category: PaymentCategory): String {
-    return when (category) {
-        PaymentCategory.UTILITIES -> "Servicios"
+        PaymentCategory.UTILITIES -> "Servicios Públicos"
+        PaymentCategory.WATER -> "Agua"
+        PaymentCategory.ELECTRICITY -> "Electricidad"
+        PaymentCategory.GAS -> "Gas"
+        PaymentCategory.INTERNET -> "Internet"
+        PaymentCategory.PHONE -> "Teléfono"
         PaymentCategory.LOANS -> "Préstamos"
-        PaymentCategory.CREDIT_CARDS -> "Tarjetas"
+        PaymentCategory.CREDIT_CARDS -> "Tarjetas de Crédito"
         PaymentCategory.INSURANCE -> "Seguros"
         PaymentCategory.RENT -> "Alquiler"
         PaymentCategory.SUBSCRIPTIONS -> "Suscripciones"
         PaymentCategory.TAXES -> "Impuestos"
         PaymentCategory.EDUCATION -> "Educación"
         PaymentCategory.HEALTH -> "Salud"
+        PaymentCategory.ENTERTAINMENT -> "Entretenimiento"
+        PaymentCategory.TRANSPORT -> "Transporte"
         PaymentCategory.OTHER -> "Otros"
+    }
+}
+
+fun getCategoryIcon(category: PaymentCategory): androidx.compose.ui.graphics.vector.ImageVector {
+    return when (category) {
+        PaymentCategory.UTILITIES -> Icons.Default.Home
+        PaymentCategory.WATER -> Icons.Default.WaterDrop
+        PaymentCategory.ELECTRICITY -> Icons.Default.Bolt
+        PaymentCategory.GAS -> Icons.Default.LocalFireDepartment
+        PaymentCategory.INTERNET -> Icons.Default.Wifi
+        PaymentCategory.PHONE -> Icons.Default.Phone
+        PaymentCategory.LOANS -> Icons.Default.AccountBalance
+        PaymentCategory.CREDIT_CARDS -> Icons.Default.CreditCard
+        PaymentCategory.INSURANCE -> Icons.Default.Shield
+        PaymentCategory.RENT -> Icons.Default.House
+        PaymentCategory.SUBSCRIPTIONS -> Icons.Default.Subscriptions
+        PaymentCategory.TAXES -> Icons.Default.Receipt
+        PaymentCategory.EDUCATION -> Icons.Default.School
+        PaymentCategory.HEALTH -> Icons.Default.LocalHospital
+        PaymentCategory.ENTERTAINMENT -> Icons.Default.SportsEsports
+        PaymentCategory.TRANSPORT -> Icons.Default.DirectionsCar
+        PaymentCategory.OTHER -> Icons.Default.Category
     }
 }

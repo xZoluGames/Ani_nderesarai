@@ -25,15 +25,15 @@ data class PaymentReminder(
     val lastPaid: LocalDate? = null,
 
     // Sistema de cuotas
-    val isInstallments: Boolean = false,  // ✅ NUEVO: Indica si es pago en cuotas
-    val totalInstallments: Int = 1,        // ✅ NUEVO: Total de cuotas
-    val currentInstallment: Int = 1,       // ✅ NUEVO: Cuota actual
-    val installmentInterval: Int = 30,     // ✅ NUEVO: Días entre cuotas (default 30 = mensual)
+    val isInstallments: Boolean = false,
+    val totalInstallments: Int = 1,
+    val currentInstallment: Int = 1,
+    val installmentInterval: Int = 30,
 
     // Recurrencia
     val isRecurring: Boolean = false,
     val recurringType: RecurringType = RecurringType.MONTHLY,
-    val customRecurringDays: Int = 30,    // ✅ NUEVO: Para recurrencias personalizadas
+    val customRecurringDays: Int = 30,
     val reminderDaysBefore: List<Int> = listOf(3, 1),
 
     // WhatsApp
@@ -41,10 +41,10 @@ data class PaymentReminder(
     val customMessage: String = "",
 
     // Estado y gestión
-    val status: ReminderStatus = ReminderStatus.ACTIVE,  // ✅ NUEVO: Estado del recordatorio
-    val isPaid: Boolean = false,           // ✅ NUEVO: Marcador rápido de pagado
-    val isCancelled: Boolean = false,      // ✅ NUEVO: Marcador de cancelado
-    val isActive: Boolean = true,          // Mantener para compatibilidad
+    val status: ReminderStatus = ReminderStatus.ACTIVE,
+    val isPaid: Boolean = false,
+    val isCancelled: Boolean = false,
+    val isActive: Boolean = true,
 
     // Personalización
     val iconType: PaymentIconType = PaymentIconType.GENERIC,
@@ -54,47 +54,50 @@ data class PaymentReminder(
     val notes: String = ""
 )
 
-// ✅ NUEVO: Enum para estados del recordatorio
+// Estados del recordatorio
 enum class ReminderStatus {
-    ACTIVE,      // Activo, pendiente de pago
-    PAID,        // Pagado completamente
-    CANCELLED,   // Cancelado/Abandonado
-    OVERDUE,     // Vencido (calculado dinámicamente)
-    PARTIAL      // Parcialmente pagado (para cuotas)
+    ACTIVE,
+    PAID,
+    CANCELLED,
+    OVERDUE,
+    PARTIAL
 }
 
+// Categorías de pago
 enum class PaymentCategory {
-    UTILITIES,       // Servicios públicos
-    WATER,          // ✅ NUEVO: Agua específicamente
-    ELECTRICITY,    // ✅ NUEVO: Luz específicamente
-    GAS,            // ✅ NUEVO: Gas específicamente
-    INTERNET,       // ✅ NUEVO: Internet específicamente
-    PHONE,          // ✅ NUEVO: Teléfono específicamente
-    LOANS,          // Préstamos
-    CREDIT_CARDS,   // Tarjetas de crédito
-    INSURANCE,      // Seguros
-    RENT,           // Alquiler
-    SUBSCRIPTIONS,  // Suscripciones
-    TAXES,          // Impuestos
-    EDUCATION,      // Educación
-    HEALTH,         // Salud
-    ENTERTAINMENT,  // ✅ NUEVO: Entretenimiento
-    TRANSPORT,      // ✅ NUEVO: Transporte
-    OTHER           // Otros
+    UTILITIES,
+    WATER,
+    ELECTRICITY,
+    GAS,
+    INTERNET,
+    PHONE,
+    LOANS,
+    CREDIT_CARDS,
+    INSURANCE,
+    RENT,
+    SUBSCRIPTIONS,
+    TAXES,
+    EDUCATION,
+    HEALTH,
+    ENTERTAINMENT,
+    TRANSPORT,
+    OTHER
 }
 
+// Tipos de recurrencia
 enum class RecurringType {
-    DAILY,          // ✅ NUEVO: Diario
-    WEEKLY,         // Semanal
-    BIWEEKLY,       // ✅ NUEVO: Quincenal
-    MONTHLY,        // Mensual
-    BIMONTHLY,      // ✅ NUEVO: Bimestral (cada 2 meses)
-    QUARTERLY,      // Trimestral (cada 3 meses)
-    SEMI_ANNUAL,    // Semestral (cada 6 meses)
-    ANNUAL,         // Anual
-    CUSTOM          // Personalizado
+    DAILY,
+    WEEKLY,
+    BIWEEKLY,
+    MONTHLY,
+    BIMONTHLY,
+    QUARTERLY,
+    SEMI_ANNUAL,
+    ANNUAL,
+    CUSTOM
 }
 
+// Tipos de iconos
 enum class PaymentIconType {
     GENERIC,
     WATER,
@@ -110,27 +113,16 @@ enum class PaymentIconType {
     EDUCATION,
     SHOPPING,
     ENTERTAINMENT,
-    TRANSPORT,      // ✅ NUEVO
-    SUBSCRIPTION,   // ✅ NUEVO
-    INSURANCE,      // ✅ NUEVO
-    TAX             // ✅ NUEVO
+    TRANSPORT,
+    SUBSCRIPTION,
+    INSURANCE,
+    TAX
 }
 
+// Prioridades
 enum class Priority {
     LOW,
     MEDIUM,
     HIGH,
     URGENT
 }
-
-// ✅ NUEVO: Data class para filtros
-data class ReminderFilters(
-    val status: ReminderStatus? = null,
-    val category: PaymentCategory? = null,
-    val priority: Priority? = null,
-    val minAmount: Double? = null,
-    val maxAmount: Double? = null,
-    val dateFrom: LocalDate? = null,
-    val dateTo: LocalDate? = null,
-    val searchQuery: String = ""
-)

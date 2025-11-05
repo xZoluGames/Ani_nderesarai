@@ -173,7 +173,7 @@ interface PaymentReminderDao {
     suspend fun advanceInstallment(id: Long, date: LocalDate = LocalDate.now())
 
     // ============================================
-    // ESTADÍSTICAS
+    // ESTADÍSTICAS (SIMPLIFICADAS)
     // ============================================
 
     @Query("SELECT COUNT(*) FROM payment_reminders WHERE status = 'ACTIVE'")
@@ -196,6 +196,7 @@ interface PaymentReminderDao {
     """)
     suspend fun getTotalPaidInPeriod(startDate: LocalDate, endDate: LocalDate): Double?
 
+    // ✅ CORREGIDO: Estadísticas por categoría ahora devuelve List
     @Query("""
         SELECT category, COUNT(*) as count 
         FROM payment_reminders 
@@ -203,7 +204,7 @@ interface PaymentReminderDao {
         GROUP BY category 
         ORDER BY count DESC
     """)
-    suspend fun getCategoryStatistics(): Map<PaymentCategory, Int>
+    suspend fun getCategoryStatistics(): List<CategoryStatistic>
 
     // ============================================
     // LIMPIEZA Y MANTENIMIENTO

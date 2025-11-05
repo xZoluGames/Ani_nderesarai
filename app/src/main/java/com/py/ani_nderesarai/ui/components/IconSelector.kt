@@ -1,93 +1,69 @@
 package com.py.ani_nderesarai.ui.components
 
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import com.py.ani_nderesarai.data.model.PaymentIconType
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun IconSelector(
     selectedIcon: PaymentIconType,
-    onIconSelected: (PaymentIconType) -> Unit
+    onIconSelected: (PaymentIconType) -> Unit,
+    modifier: Modifier = Modifier
 ) {
-    Column(
-        verticalArrangement = Arrangement.spacedBy(8.dp)
+    var expanded by remember { mutableStateOf(false) }
+
+    ExposedDropdownMenuBox(
+        expanded = expanded,
+        onExpandedChange = { expanded = it },
+        modifier = modifier
     ) {
-        Text(
-            text = "Icono",
-            style = MaterialTheme.typography.labelMedium
+        OutlinedTextField(
+            value = getIconLabel(selectedIcon),
+            onValueChange = {},
+            readOnly = true,
+            label = { Text("Ícono") },
+            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+            leadingIcon = { Icon(getIcon(selectedIcon), contentDescription = null) },
+            modifier = Modifier
+                .fillMaxWidth()
+                .menuAnchor()
         )
-        
-        LazyRow(
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+
+        ExposedDropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false }
         ) {
-            items(PaymentIconType.values()) { iconType ->
-                IconChip(
-                    iconType = iconType,
-                    isSelected = iconType == selectedIcon,
-                    onClick = { onIconSelected(iconType) }
+            PaymentIconType.values().forEach { iconType ->
+                DropdownMenuItem(
+                    text = { Text(getIconLabel(iconType)) },
+                    onClick = {
+                        onIconSelected(iconType)
+                        expanded = false
+                    },
+                    leadingIcon = {
+                        Icon(getIcon(iconType), contentDescription = null)
+                    }
                 )
             }
         }
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun IconChip(
-    iconType: PaymentIconType,
-    isSelected: Boolean,
-    onClick: () -> Unit
-) {
-    FilterChip(
-        onClick = onClick,
-        label = {
-            Icon(
-                imageVector = getPaymentIcon(iconType),
-                contentDescription = getIconName(iconType),
-                modifier = Modifier.size(20.dp)
-            )
-        },
-        selected = isSelected
-    )
-}
-
-fun getPaymentIcon(iconType: PaymentIconType): ImageVector {
+fun getIconLabel(iconType: PaymentIconType): String {
     return when (iconType) {
-        PaymentIconType.GENERIC -> Icons.Default.Payment
-        PaymentIconType.WATER -> Icons.Default.Water
-        PaymentIconType.ELECTRICITY -> Icons.Default.ElectricBolt
-        PaymentIconType.GAS -> Icons.Default.LocalGasStation
-        PaymentIconType.INTERNET -> Icons.Default.Wifi
-        PaymentIconType.PHONE -> Icons.Default.Phone
-        PaymentIconType.CREDIT_CARD -> Icons.Default.CreditCard
-        PaymentIconType.BANK -> Icons.Default.AccountBalance
-        PaymentIconType.HOUSE -> Icons.Default.Home
-        PaymentIconType.CAR -> Icons.Default.DirectionsCar
-        PaymentIconType.HEALTH -> Icons.Default.LocalHospital
-        PaymentIconType.EDUCATION -> Icons.Default.School
-        PaymentIconType.SHOPPING -> Icons.Default.ShoppingCart
-        PaymentIconType.ENTERTAINMENT -> Icons.Default.Movie
-    }
-}
-
-fun getIconName(iconType: PaymentIconType): String {
-    return when (iconType) {
-        PaymentIconType.GENERIC -> "General"
+        PaymentIconType.GENERIC -> "Genérico"
         PaymentIconType.WATER -> "Agua"
-        PaymentIconType.ELECTRICITY -> "Luz"
+        PaymentIconType.ELECTRICITY -> "Electricidad"
         PaymentIconType.GAS -> "Gas"
         PaymentIconType.INTERNET -> "Internet"
         PaymentIconType.PHONE -> "Teléfono"
-        PaymentIconType.CREDIT_CARD -> "Tarjeta"
+        PaymentIconType.CREDIT_CARD -> "Tarjeta de Crédito"
         PaymentIconType.BANK -> "Banco"
         PaymentIconType.HOUSE -> "Casa"
         PaymentIconType.CAR -> "Auto"
@@ -95,5 +71,32 @@ fun getIconName(iconType: PaymentIconType): String {
         PaymentIconType.EDUCATION -> "Educación"
         PaymentIconType.SHOPPING -> "Compras"
         PaymentIconType.ENTERTAINMENT -> "Entretenimiento"
+        PaymentIconType.TRANSPORT -> "Transporte"
+        PaymentIconType.SUBSCRIPTION -> "Suscripción"
+        PaymentIconType.INSURANCE -> "Seguro"
+        PaymentIconType.TAX -> "Impuesto"
+    }
+}
+
+fun getIcon(iconType: PaymentIconType): androidx.compose.ui.graphics.vector.ImageVector {
+    return when (iconType) {
+        PaymentIconType.GENERIC -> Icons.Default.Payments
+        PaymentIconType.WATER -> Icons.Default.WaterDrop
+        PaymentIconType.ELECTRICITY -> Icons.Default.Bolt
+        PaymentIconType.GAS -> Icons.Default.LocalFireDepartment
+        PaymentIconType.INTERNET -> Icons.Default.Wifi
+        PaymentIconType.PHONE -> Icons.Default.Phone
+        PaymentIconType.CREDIT_CARD -> Icons.Default.CreditCard
+        PaymentIconType.BANK -> Icons.Default.AccountBalance
+        PaymentIconType.HOUSE -> Icons.Default.House
+        PaymentIconType.CAR -> Icons.Default.DirectionsCar
+        PaymentIconType.HEALTH -> Icons.Default.LocalHospital
+        PaymentIconType.EDUCATION -> Icons.Default.School
+        PaymentIconType.SHOPPING -> Icons.Default.ShoppingCart
+        PaymentIconType.ENTERTAINMENT -> Icons.Default.SportsEsports
+        PaymentIconType.TRANSPORT -> Icons.Default.DirectionsBus
+        PaymentIconType.SUBSCRIPTION -> Icons.Default.Subscriptions
+        PaymentIconType.INSURANCE -> Icons.Default.Shield
+        PaymentIconType.TAX -> Icons.Default.Receipt
     }
 }

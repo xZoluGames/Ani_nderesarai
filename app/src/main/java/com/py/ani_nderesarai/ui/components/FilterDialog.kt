@@ -12,7 +12,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.py.ani_nderesarai.data.model.*
 import java.time.LocalDate
-
+import com.py.ani_nderesarai.ui.utils.getPriorityIcon
+import com.py.ani_nderesarai.ui.utils.getPriorityColor
+import com.py.ani_nderesarai.ui.components.getCategoryLabel
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FilterDialog(
@@ -365,27 +367,6 @@ private fun getStatusIcon(status: ReminderStatus): androidx.compose.ui.graphics.
     }
 }
 
-private fun getCategoryLabel(category: PaymentCategory): String {
-    return when (category) {
-        PaymentCategory.UTILITIES -> "Servicios"
-        PaymentCategory.WATER -> "Agua"
-        PaymentCategory.ELECTRICITY -> "Electricidad"
-        PaymentCategory.GAS -> "Gas"
-        PaymentCategory.INTERNET -> "Internet"
-        PaymentCategory.PHONE -> "Teléfono"
-        PaymentCategory.LOANS -> "Préstamos"
-        PaymentCategory.CREDIT_CARDS -> "Tarjetas"
-        PaymentCategory.INSURANCE -> "Seguros"
-        PaymentCategory.RENT -> "Alquiler"
-        PaymentCategory.SUBSCRIPTIONS -> "Suscripciones"
-        PaymentCategory.TAXES -> "Impuestos"
-        PaymentCategory.EDUCATION -> "Educación"
-        PaymentCategory.HEALTH -> "Salud"
-        PaymentCategory.ENTERTAINMENT -> "Entretenimiento"
-        PaymentCategory.TRANSPORT -> "Transporte"
-        PaymentCategory.OTHER -> "Otros"
-    }
-}
 
 private fun getCategoryEmoji(category: PaymentCategory): String {
     return when (category) {
@@ -418,24 +399,6 @@ private fun getPriorityLabel(priority: Priority): String {
     }
 }
 
-private fun getPriorityIcon(priority: Priority): androidx.compose.ui.graphics.vector.ImageVector {
-    return when (priority) {
-        Priority.LOW -> Icons.Default.KeyboardArrowDown
-        Priority.MEDIUM -> Icons.Default.Remove
-        Priority.HIGH -> Icons.Default.KeyboardArrowUp
-        Priority.URGENT -> Icons.Default.PriorityHigh
-    }
-}
-
-@Composable
-private fun getPriorityColor(priority: Priority): androidx.compose.ui.graphics.Color {
-    return when (priority) {
-        Priority.LOW -> MaterialTheme.colorScheme.tertiary
-        Priority.MEDIUM -> MaterialTheme.colorScheme.primary
-        Priority.HIGH -> MaterialTheme.colorScheme.secondary
-        Priority.URGENT -> MaterialTheme.colorScheme.error
-    }
-}
 
 // ============================================
 // DATE PICKER FIELD
